@@ -9,10 +9,10 @@ jobs:
         runs-on: ubuntu-latest
 
         steps:
-            - uses: actions/checkout@v2
+            - uses: actions/checkout@v4
 
             - name: build
-              run: cargo build --verbose -- release
+              run: cargo build --verbose --release
             - name: run tests
               run: cargo test --verbose
 
