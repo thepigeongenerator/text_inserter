@@ -28,7 +28,15 @@ struct Definition {
 fn insert_definitions(file: &mut File, contents: &String, definitions: &Vec<Definition>) {
     let mut new_contents = contents.to_owned();
 
+    // remove the definition definition
+    new_contents = Regex::new(REGEX_DEFINITION)
+        .unwrap()
+        .replace_all(&new_contents.as_str(), "")
+        .to_string();
+
+    // loop through all the known definitions
     for definition in definitions {
+        // match all the places it needs to be inserted
         let regex = format!("\\${}\\$", definition.name);
         let matcher = Regex::new(regex.as_str()).unwrap();
 
