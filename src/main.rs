@@ -1,6 +1,6 @@
 use std::{
     fs::{File, OpenOptions},
-    io::{Read, Write},
+    io::{Read, Seek, SeekFrom, Write},
     path::Path,
     process::exit,
 };
@@ -38,7 +38,13 @@ fn insert_definitions(file: &mut File, contents: &String, definitions: &Vec<Defi
             .to_string();
     }
 
+    // move to the beginning of the file, and truncate it
+    file.seek(SeekFrom::Start(0)).ok();
+    file.set_len(0).ok();
+
+    // write the new contents to the file
     file.write_all(new_contents.as_bytes()).ok();
+    file.flush().ok();
 }
 
 fn get_definitions(file_contents: &String, definitions: &mut Vec<Definition>) {
