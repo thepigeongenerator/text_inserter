@@ -60,14 +60,14 @@ fn get_definitions(file_contents: &String, definitions: &mut Vec<Definition>) {
         let name = def_match.get(1).unwrap().as_str();
         let contents = def_match.get(2).unwrap().as_str();
 
-        // for debugging
-        println!("{}", name);
-        println!("{}", contents);
+        // trim the lines
+        let trimmer = Regex::new(r"(?m)^\s*").unwrap(); // trim all the left whitespace
+        let trimmed = trimmer.replace_all(contents.trim(), "").to_string(); // trim the contents from leading and following whitespace, and use the regex to clear the rest
 
         // append the definition to the end of the definition collection
         definitions.push(Definition {
             name: String::from(name),
-            contents: String::from(contents),
+            contents: String::from(trimmed),
         });
     }
 }
