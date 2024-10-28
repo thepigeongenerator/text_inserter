@@ -1,0 +1,26 @@
+name: auto compile on new release
+
+on:
+    release:
+        types: [created]
+
+jobs:
+    build:
+        runs-on: ubuntu-latest
+
+        steps:
+            - uses: actions/checkout@v2
+
+            - name: build
+              run: cargo build --verbose -- release
+            - name: run tests
+              run: cargo test --verbose
+
+            - name: Upload Release Asset
+              uses: softprops/action-gh-release@v1
+              with:
+                tag_name: ${{ github.event.release.tag_name }}
+                files: ./target/release/txtinsert
+              env:
+                GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
