@@ -82,9 +82,10 @@ fn main() {
         error!("no arguments were given!");
     }
 
-    let mut files: Vec<File> = Vec::new();
-    let mut contents: Vec<String> = Vec::new();
-    let mut definitions: Vec<Definition> = Vec::new();
+    // mutable data definitions
+    let mut files: Vec<File> = Vec::new(); // contains the files that are being worked with
+    let mut contents: Vec<String> = Vec::new(); // contains the contents of the files
+    let mut definitions: Vec<Definition> = Vec::new(); // contains the different definitions and their contents
 
     // loop through the arguments, skip the first one, as this is the executable location
     for i in 1..args.len() {
@@ -96,16 +97,22 @@ fn main() {
         }
 
         // open the file with read/write access
-        files.push(OpenOptions::new().read(true).write(true).open(arg).expect("something went wrong when loading the file"));
+        files.push(
+            OpenOptions::new()
+                .read(true)
+                .write(true)
+                .open(arg)
+                .expect("something went wrong when loading the file"),
+        );
 
         // read the file's contents
-        let mut file = &files[i];
+        let mut file = &files[i - 1];
         let mut data = String::new();
         file.read_to_string(&mut data).ok();
         contents.push(data); // give the contents with ownership to the list
 
         // get the definitions for each file, as we are loading it
-        get_definitions(&contents[i], &mut definitions);
+        get_definitions(&contents[i - 1], &mut definitions);
     }
 
     for i in 0..files.len() {
