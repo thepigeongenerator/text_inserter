@@ -1,4 +1,5 @@
 use std::{
+    env,
     fs::{File, OpenOptions},
     io::{Read, Seek, SeekFrom, Write},
     path::Path,
@@ -7,7 +8,6 @@ use std::{
 
 use regex::Regex;
 
-const PATH_INPUTS: [&str; 1] = ["./test.html"];
 const REGEX_DEFINITION: &str = r"\$([A-Z]+)\s*\{([\s\S]*?)\}";
 
 // error macro, which formats the printed text and exits with -1
@@ -74,7 +74,11 @@ fn get_definitions(file_contents: &String, definitions: &mut Vec<Definition>) {
 
 // entry point of the application
 fn main() {
-    if PATH_INPUTS.len() == 0 {
+    // get the command-line arguments
+    let args: Vec<String> = env::args().collect();
+
+    // skip first argument, as this is the executable location
+    if args.len() <= 1 {
         error!("no arguments were given!");
     }
 
@@ -82,8 +86,9 @@ fn main() {
     let mut contents: Vec<String> = Vec::new();
     let mut definitions: Vec<Definition> = Vec::new();
 
-    for i in 0..PATH_INPUTS.len() {
-        let arg = PATH_INPUTS[i];
+    // loop through the arguments, skip the first one, as this is the executable location
+    for i in 1..args.len() {
+        let arg: &str = args[i].as_str();
 
         // check whether the path exists, cause an error if not
         if Path::new(arg).exists() == false {
@@ -91,7 +96,7 @@ fn main() {
         }
 
         // open the file with read/write access
-        files.push(OpenOptions::new().read(true).write(true).open(arg).unwrap());
+        files.push(OpenOptions::new().read(true).write(true).open(arg).expect("something went wrong when loading the file"));
 
         // read the file's contents
         let mut file = &files[i];
