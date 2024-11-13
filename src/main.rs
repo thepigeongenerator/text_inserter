@@ -1,3 +1,6 @@
+// TODO:
+// - fix bug where a parameterless insertion doesn't insert
+// - fix bug where if you run the code on a file with no definitions, it clears THE WHOLE FILE
 use std::{
     env,
     fs::{File, OpenOptions},
@@ -6,9 +9,9 @@ use std::{
     process::exit,
 };
 
-use regex::Regex;
+use regex::{Captures, Regex};
 
-const REGEX_DEFINITION: &str = r"\$([A-Z]+)\s*\{([\s\S]*?)\}";
+const REGEX_DEFINITION: &str = r"\$([A-Z]+)((\s+\w+)*\s*)\{([\s\S]*?)\}";
 
 // error macro, which formats the printed text and exits with -1
 macro_rules! error {
@@ -20,29 +23,93 @@ macro_rules! error {
     };
 }
 
+// data structure for a definition
 struct Definition {
     name: String,
+    parameters: Vec<String>,
     contents: String,
 }
 
-fn insert_definitions(file: &mut File, contents: &String, definitions: &Vec<Definition>) {
-    let mut new_contents = contents.to_owned();
+fn foreach_match<F: Fn(Captures) -> String>(matcher: Regex, to_match: String, exec: F) -> String {
+    let mut res = String::new();
+    let mut last_pos = 0;
 
-    // remove the definition definition
-    new_contents = Regex::new(REGEX_DEFINITION)
-        .unwrap()
-        .replace_all(&new_contents.as_str(), "")
-        .to_string();
+    // iterate through the matches
+    for m in matcher.captures_iter(&to_match) {
+        let m0 = m.get(0).unwrap();
+        res.push_str(&to_match[last_pos..m0.start()]); //   get the text from the last position and the start of the original text, and push this string
+        res.push_str(&exec(m)); //                          execute the function, and push the result to the end of the string
+        last_pos = m0.end(); //                             update the last position with the end of the match
+    }
+
+    res.push_str(&to_match[last_pos..]); // push the remaining text to the end
+
+    // return the result
+    return res;
+}
+
+// replaces all occurrences of the definition with the defined text (according to the parameters, if used)
+// removes the definitions itself
+fn insert_definitions(file: &mut File, contents: &String, definitions: &Vec<Definition>) {
+    let mut new_contents = String::new();
 
     // loop through all the known definitions
     for definition in definitions {
         // match all the places it needs to be inserted
-        let regex = format!("\\${}\\$", definition.name);
-        let matcher = Regex::new(regex.as_str()).unwrap();
+        let regex = format!(r#"\${}(\s".*?")*\s*\$"#, definition.name); // just... don't ask about this RegEx
+        let matcher = Regex::new(&regex).unwrap();
 
-        // replace all the current definitions
-        new_contents = matcher
-            .replace_all(new_contents.as_str(), &definition.contents)
+        // loop through the matches and insert the correct text
+        new_contents = foreach_match(matcher, contents.to_owned(), |mat| {
+            let mat1 = mat.get(1); // get group 1
+
+            // set args to an empty string if group 1 isn't set, otherwise set it to the contents of group 1
+            let args;
+            if mat1 != None {
+                args = mat1.unwrap().as_str().trim();
+            } else {
+                args = "";
+            }
+
+            // if no arguments were given, just replace the string normally
+            if args.is_empty() {
+                return definition.contents.to_owned();
+            }
+
+            // otherwise, extract the different arguments and apply them to the contents
+            let mut i = 0;
+            let mut insert = definition.contents.to_owned();
+            let arg_matcher = Regex::new(r#""(.*)""#).unwrap(); // regex to match anything (excl. newline) between double quotes
+            for arg in arg_matcher.captures_iter(args) {
+                let arg_val = arg.get(1).unwrap().as_str(); // get the value within the quotes
+
+                // throw an error if the iteration count exeeds the amount of parameters
+                if i >= definition.parameters.len() {
+                    error!(
+                        "too many arguments! ({}/{}) '{}'",
+                        i + 1,
+                        definition.parameters.len(),
+                        arg_val
+                    );
+                }
+
+                let arg_regex = format!(r#"\${}\$"#, definition.parameters[i]);
+                insert = Regex::new(&arg_regex)
+                    .unwrap()
+                    .replace_all(&insert, arg_val)
+                    .to_string();
+
+                i += 1; // increase the iteration count
+            }
+
+            // return what needs to be inserted
+            return insert;
+        });
+
+        // remove the definition definitions
+        new_contents = Regex::new(REGEX_DEFINITION)
+            .unwrap()
+            .replace_all(&new_contents.as_str(), "")
             .to_string();
     }
 
@@ -55,6 +122,7 @@ fn insert_definitions(file: &mut File, contents: &String, definitions: &Vec<Defi
     file.flush().ok();
 }
 
+// acquires the definitions in the inputted text
 fn get_definitions(file_contents: &String, definitions: &mut Vec<Definition>) {
     // matches the definitions
     let matcher: Regex = Regex::new(REGEX_DEFINITION).unwrap();
@@ -65,16 +133,28 @@ fn get_definitions(file_contents: &String, definitions: &mut Vec<Definition>) {
     // match the string, and loop through the matches
     for def_match in matcher.captures_iter(data) {
         // extract the different components from the groups (group 0 is the whole match)
-        let name = def_match.get(1).unwrap().as_str();
-        let contents = def_match.get(2).unwrap().as_str();
+        let name = def_match.get(1).unwrap().as_str(); //       the name of the definition
+        let arguments = def_match.get(2).unwrap().as_str(); //  the (potential) arguments of the definition
+        let contents = def_match.get(4).unwrap().as_str(); //   the contents of the definition
 
-        // trim the lines
-        let trimmer = Regex::new(r"(?m)^\s*").unwrap(); // trim all the left whitespace
-        let trimmed = trimmer.replace_all(contents.trim(), "").to_string(); // trim the contents from leading and following whitespace, and use the regex to clear the rest
+        // extract the potential arguments
+        let mut args: Vec<String> = Vec::new();
+        for mut arg in arguments.trim().split(' ') {
+            // if the argument isn't empty, add it to the list of arguments
+            arg = arg.trim();
+            if arg.is_empty() == false {
+                args.push(String::from(arg));
+            }
+        }
+
+        // trim the contents, so it inserts properly
+        let trimmer = Regex::new(r"(?m)^\s*").unwrap(); //                      trim all the left whitespace
+        let trimmed = trimmer.replace_all(contents.trim(), "").to_string(); //  trim the contents from leading and following whitespace, and use the regex to clear the rest
 
         // append the definition to the end of the definition collection
         definitions.push(Definition {
             name: String::from(name),
+            parameters: args,
             contents: String::from(trimmed),
         });
     }
@@ -91,9 +171,9 @@ fn main() {
     }
 
     // mutable data definitions
-    let mut files: Vec<File> = Vec::new(); // contains the files that are being worked with
-    let mut contents: Vec<String> = Vec::new(); // contains the contents of the files
-    let mut definitions: Vec<Definition> = Vec::new(); // contains the different definitions and their contents
+    let mut files: Vec<File> = Vec::new(); //               contains the files that are being worked with
+    let mut contents: Vec<String> = Vec::new(); //          contains the contents of the files
+    let mut definitions: Vec<Definition> = Vec::new(); //   contains the different definitions and their contents
 
     // loop through the arguments, skip the first one, as this is the executable location
     for i in 1..args.len() {
