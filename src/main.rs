@@ -11,7 +11,10 @@ use std::{
 
 use regex::{Captures, Regex};
 
-const REGEX_DEFINITION: &str = r"\$([A-Z]+)((\s+\w+)*\s*)\{([\s\S]*?)\}";
+const DEFINITION_REGEX: &str = r"\$([A-Z]+)((\s+\w+)*\s*)\{([\s\S]*?)\}";
+const DEFINITION_NAME: usize = 1;
+const DEFINITION_ARGS: usize = 2;
+const DEFINITION_VALUE: usize = 4;
 
 // error macro, which formats the printed text and exits with -1
 macro_rules! error {
@@ -108,7 +111,7 @@ fn insert_definitions(file: &mut File, contents: &String, definitions: &Vec<Defi
         });
 
         // remove the definition definitions
-        new_contents = Regex::new(REGEX_DEFINITION)
+        new_contents = Regex::new(DEFINITION_REGEX)
             .unwrap()
             .replace_all(&new_contents.as_str(), "")
             .to_string();
@@ -126,7 +129,7 @@ fn insert_definitions(file: &mut File, contents: &String, definitions: &Vec<Defi
 // acquires the definitions in the inputted text
 fn get_definitions(file_contents: &String, definitions: &mut Vec<Definition>) {
     // matches the definitions
-    let matcher: Regex = Regex::new(REGEX_DEFINITION).unwrap();
+    let matcher: Regex = Regex::new(DEFINITION_REGEX).unwrap();
 
     // get the data from the file
     let data = &file_contents.as_str();
@@ -134,9 +137,9 @@ fn get_definitions(file_contents: &String, definitions: &mut Vec<Definition>) {
     // match the string, and loop through the matches
     for def_match in matcher.captures_iter(data) {
         // extract the different components from the groups (group 0 is the whole match)
-        let name = def_match.get(1).unwrap().as_str(); //       the name of the definition
-        let arguments = def_match.get(2).unwrap().as_str(); //  the (potential) arguments of the definition
-        let contents = def_match.get(4).unwrap().as_str(); //   the contents of the definition
+        let name = def_match.get(DEFINITION_NAME).unwrap().as_str(); //       the name of the definition
+        let arguments = def_match.get(DEFINITION_ARGS).unwrap().as_str(); //  the (potential) arguments of the definition
+        let contents = def_match.get(DEFINITION_VALUE).unwrap().as_str(); //   the contents of the definition
 
         // extract the potential arguments
         let mut args: Vec<String> = Vec::new();
