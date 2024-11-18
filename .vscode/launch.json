@@ -4,39 +4,11 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug executable",
-            "cargo": {
-                "args": [
-                    "build",
-                    "--bin=${workspaceFolderBasename}",
-                    "--package=${workspaceFolderBasename}"
-                ],
-                "filter": {
-                    "name": "html_util",
-                    "kind": "bin"
-                }
-            },
-            "args": [],
-            "cwd": "${workspaceFolder}"
+            "name": "Debug",
+            "program": "${workspaceFolder}/target/debug/txtinsert",
+            "args": ["test.txt"],
+            "cwd": "${workspaceFolder}",
+            "preLaunchTask": "rust: cargo build"
         },
-        {
-            "type": "lldb",
-            "request": "launch",
-            "name": "Debug unit tests in executable",
-            "cargo": {
-                "args": [
-                    "test",
-                    "--no-run",
-                    "--bin=${workspaceFolderBasename}",
-                    "--package=${workspaceFolderBasename}"
-                ],
-                "filter": {
-                    "name": "${workspaceFolderBasename}",
-                    "kind": "bin"
-                }
-            },
-            "args": [],
-            "cwd": "${workspaceFolder}"
-        }
     ]
 }

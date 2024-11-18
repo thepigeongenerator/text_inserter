@@ -86,7 +86,8 @@ fn insert_definitions(file: &mut File, contents: &String, definitions: &Vec<Defi
                 // throw an error if the iteration count exeeds the amount of parameters
                 if i >= definition.parameters.len() {
                     error!(
-                        "too many arguments! ({}/{}) '{}'",
+                        "too many arguments were given with '{}'! ({}/{}) value: '{}'",
+                        definition.name,
                         i + 1,
                         definition.parameters.len(),
                         arg_val
@@ -183,6 +184,8 @@ fn main() {
         if Path::new(arg).exists() == false {
             error!("could not find the file at '{}'", arg);
         }
+
+        println!("processing file '{}'", arg);
 
         // open the file with read/write access
         files.push(
