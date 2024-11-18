@@ -1,4 +1,4 @@
-name: auto compile on new release
+name: test on dev push
 
 on:
     push:
