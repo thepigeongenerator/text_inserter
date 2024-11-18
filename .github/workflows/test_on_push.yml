@@ -1,8 +1,10 @@
 name: test on push
 
 on:
-    push:
-        branches:  [main]
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
 
 jobs:
     build:
@@ -10,9 +12,6 @@ jobs:
 
         steps:
             - uses: actions/checkout@v4
-            - uses: actions-rs/toolchain@v1
-              with:
-                toolchain: stable
 
             - name: build
               run: cargo build --verbose --release
