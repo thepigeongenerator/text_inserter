@@ -1,5 +1,3 @@
-// TODO:
-// - fix bug where if you run the code on a file with no definitions, it clears THE WHOLE FILE
 use std::{
     env,
     fs::{File, OpenOptions},
