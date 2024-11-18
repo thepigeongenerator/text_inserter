@@ -1,5 +1,4 @@
 // TODO:
-// - fix bug where a parameterless insertion doesn't insert
 // - fix bug where if you run the code on a file with no definitions, it clears THE WHOLE FILE
 use std::{
     env,
@@ -39,13 +38,16 @@ fn foreach_match<F: Fn(Captures) -> String>(matcher: Regex, to_match: String, ex
 
     // iterate through the matches
     for m in matcher.captures_iter(&to_match) {
+        // get the entire match (group 0)
         let m0 = m.get(0).unwrap();
+
         res.push_str(&to_match[last_pos..m0.start()]); //   get the text from the last position and the start of the original text, and push this string
         res.push_str(&exec(m)); //                          execute the function, and push the result to the end of the string
         last_pos = m0.end(); //                             update the last position with the end of the match
     }
 
-    res.push_str(&to_match[last_pos..]); // push the remaining text to the end
+    // push the remaining text to the end
+    res.push_str(&to_match[last_pos..]);
 
     // return the result
     return res;
@@ -54,16 +56,15 @@ fn foreach_match<F: Fn(Captures) -> String>(matcher: Regex, to_match: String, ex
 // replaces all occurrences of the definition with the defined text (according to the parameters, if used)
 // removes the definitions itself
 fn insert_definitions(file: &mut File, contents: &String, definitions: &Vec<Definition>) {
-    let mut new_contents = String::new();
+    let mut new_contents = contents.to_owned();
 
     // loop through all the known definitions
     for definition in definitions {
-        // match all the places it needs to be inserted
-        let regex = format!(r#"\${}(\s".*?")*\s*\$"#, definition.name); // just... don't ask about this RegEx
-        let matcher = Regex::new(&regex).unwrap();
+        // create the matcher that will be used
+        let matcher = Regex::new(&format!(r#"\${}(\s".*?")*\s*\$"#, definition.name)).unwrap();
 
         // loop through the matches and insert the correct text
-        new_contents = foreach_match(matcher, contents.to_owned(), |mat| {
+        new_contents = foreach_match(matcher, new_contents.to_owned(), |mat| {
             let mat1 = mat.get(1); // get group 1
 
             // set args to an empty string if group 1 isn't set, otherwise set it to the contents of group 1
@@ -83,6 +84,7 @@ fn insert_definitions(file: &mut File, contents: &String, definitions: &Vec<Defi
             let mut i = 0;
             let mut insert = definition.contents.to_owned();
             let arg_matcher = Regex::new(r#""(.*)""#).unwrap(); // regex to match anything (excl. newline) between double quotes
+
             for arg in arg_matcher.captures_iter(args) {
                 let arg_val = arg.get(1).unwrap().as_str(); // get the value within the quotes
 
