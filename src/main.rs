@@ -53,8 +53,8 @@ fn foreach_match<F: Fn(Captures) -> String>(matcher: Regex, to_match: String, ex
 
 // replaces all occurrences of the definition with the defined text (according to the parameters, if used)
 // removes the definitions itself
-fn insert_definitions(file: &mut File, contents: &String, definitions: &Vec<Definition>) {
-    let mut new_contents = contents.to_owned();
+fn insert_definitions(contents: &String, definitions: &Vec<Definition>) -> String {
+    let mut new_contents = contents.clone(); // create a copy of the string
 
     // loop through all the known definitions
     for definition in definitions {
@@ -117,13 +117,7 @@ fn insert_definitions(file: &mut File, contents: &String, definitions: &Vec<Defi
             .to_string();
     }
 
-    // move to the beginning of the file, and truncate it
-    file.seek(SeekFrom::Start(0)).ok();
-    file.set_len(0).ok();
-
-    // write the new contents to the file
-    file.write_all(new_contents.as_bytes()).ok();
-    file.flush().ok();
+    return new_contents;
 }
 
 // acquires the definitions in the inputted text
@@ -210,6 +204,14 @@ fn main() {
     }
 
     for i in 0..files.len() {
-        insert_definitions(&mut files[i], &contents[i], &definitions);
+        let new_contents = insert_definitions(&contents[i], &definitions);
+
+        // move to the beginning of the file, and truncate it
+        files[i].seek(SeekFrom::Start(0)).ok();
+        files[i].set_len(0).ok();
+
+        // write the new contents to the file
+        files[i].write_all(new_contents.as_bytes()).ok();
+        files[i].flush().ok();
     }
 }
