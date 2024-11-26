@@ -81,7 +81,7 @@ pub fn insert_definitions(contents: &String, definitions: &Vec<Definition>) -> S
             // otherwise, extract the different arguments and apply them to the contents
             let mut i = 0;
             let mut insert = definition.contents.to_owned();
-            let arg_matcher = Regex::new(r#""(.*)""#).unwrap(); // regex to match anything (excl. newline) between double quotes
+            let arg_matcher = Regex::new(r#""(.*?)""#).unwrap(); // regex to match anything (excl. newline) between double quotes
 
             for arg in arg_matcher.captures_iter(args) {
                 let arg_val = arg.get(1).unwrap().as_str(); // get the value within the quotes
