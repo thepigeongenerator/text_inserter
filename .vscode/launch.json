@@ -6,9 +6,9 @@
             "request": "launch",
             "name": "Debug",
             "program": "${workspaceFolder}/target/debug/txtinsert",
-            "args": ["test.txt"],
+            "args": [],
             "cwd": "${workspaceFolder}",
-            "preLaunchTask": "rust: cargo build"
+            "preLaunchTask": "rust: cargo test"
         },
     ]
 }
