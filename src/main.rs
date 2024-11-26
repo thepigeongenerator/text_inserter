@@ -24,7 +24,7 @@ macro_rules! error {
 }
 
 // data structure for a definition
-struct Definition {
+pub struct Definition {
     name: String,
     parameters: Vec<String>,
     contents: String,
@@ -53,13 +53,13 @@ fn foreach_match<F: Fn(Captures) -> String>(matcher: Regex, to_match: String, ex
 
 // replaces all occurrences of the definition with the defined text (according to the parameters, if used)
 // removes the definitions itself
-fn insert_definitions(contents: &String, definitions: &Vec<Definition>) -> String {
+pub fn insert_definitions(contents: &String, definitions: &Vec<Definition>) -> String {
     let mut new_contents = contents.clone(); // create a copy of the string
 
     // loop through all the known definitions
     for definition in definitions {
         // create the matcher that will be used
-        let matcher = Regex::new(&format!(r#"\${}(\s".*?")*\s*\$"#, definition.name)).unwrap();
+        let matcher = Regex::new(&format!(r#"\${}+((\s".*?")*)\s*\$"#, definition.name)).unwrap();
 
         // loop through the matches and insert the correct text
         new_contents = foreach_match(matcher, new_contents.to_owned(), |mat| {
@@ -121,7 +121,7 @@ fn insert_definitions(contents: &String, definitions: &Vec<Definition>) -> Strin
 }
 
 // acquires the definitions in the inputted text
-fn get_definitions(file_contents: &String, definitions: &mut Vec<Definition>) {
+pub fn get_definitions(file_contents: &String, definitions: &mut Vec<Definition>) {
     // matches the definitions
     let matcher: Regex = Regex::new(DEFINITION_REGEX).unwrap();
 
@@ -214,4 +214,32 @@ fn main() {
         files[i].write_all(new_contents.as_bytes()).ok();
         files[i].flush().ok();
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{insert_definitions, Definition};
+
+    #[test]
+    fn empty_remains_empty() {
+        let definitions: Vec<Definition> = vec![];
+        let inp = String::from("");
+        let out: String = insert_definitions(&inp, &definitions);
+        assert!(out == inp); // check whether the output and input are equal
+    }
+
+    #[test]
+    fn content_remains_content() {
+        let definitions: Vec<Definition> = vec![Definition {
+            name: String::from(""),
+            contents: String::from(""),
+            parameters: vec![String::new(); 0],
+        }];
+        let inp = String::from(":3 W-Wowwem (*≧▽≦) ipsum dowow owo s-sit >~< amwet, *blushes* >~< conswectwetuw adipiscing :3 w-wewit, swed do (*≧▽≦) weiusmod owo twempow incididunt *giggles* u-ut UwU wabowwe uwu wet dowowwe UwU magnya awiqua. :3 Vwenyiam uwwamco (*≧▽≦) nyostwud (・`ω´・) wea conswequat m-minyim :3 wexwewcitation. Ewit dweswewunt awiquip iwuwwe UwU v-vwewit :3 w-wenyim commodo w-wwepwwehwendwewit *giggles* (・`ω´・) ad. Est uwu ad wewit (*≧▽≦) do weiusmod (・`ω´・) dowowwe quis (*≧▽≦) iwuwwe. Nostwud q-quis (*≧▽≦) weu UwU minyim conswectwetuw. owo Esswe i-in >~< vwewit :3 sit :3 cupidatat uwu nyisi amwet *nuzzles* west. In :3 dowowwe wabowum ut owo adipiscing *nuzzles* i-in magnya uwu wabowum sit.");
+        let out = insert_definitions(&inp, &definitions);
+        assert!(inp == out);
+    }
+
+    #[test]
+    fn
 }
