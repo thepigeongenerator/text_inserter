@@ -8,7 +8,7 @@ use std::{
 
 use regex::{Captures, Regex};
 
-const DEFINITION_REGEX: &str = r"\$([A-Z]+)((\s+\w+)*\s*)\{([\s\S]*?)\}";
+const DEFINITION_REGEX: &str = r"\$(\w+)((\s+\w+)*\s*)\{([\s\S]*?)\}";
 const DEFINITION_NAME: usize = 1;
 const DEFINITION_ARGS: usize = 2;
 const DEFINITION_VALUE: usize = 4;
