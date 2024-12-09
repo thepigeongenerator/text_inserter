@@ -16,9 +16,9 @@ const DEFINITION_VALUE: usize = 4;
 // error macro, which formats the printed text and exits with -1
 macro_rules! error {
     ($($arg:tt)*) => {
-        print!("\x1b[91m");
-        print!($($arg)*);
-        print!("\x1b[0m\n");
+        eprint!("\x1b[91m");
+        eprint!($($arg)*);
+        eprint!("\x1b[0m\n");
         exit(-1);
     };
 }
